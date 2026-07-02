@@ -465,7 +465,7 @@ new p5(function(p) {
     let isNewPoint = currentPointIndex !== previousPointIndex;
     if (isNewPoint) mountainFrameCount = 0;
     mountainFrameCount++;
-    if (isNewPoint && currentPointIndex > 0) {
+    if (isNewPoint && currentPointIndex > 0 && !isDone) {
       p.fill(255,255,255,255*p.random(0.03,0.08));
       p.noStroke();
       p.rect(0,0,p.width,p.height);
@@ -628,7 +628,7 @@ new p5(function(p) {
         }
       }
       if (isNewPoint&&lowestPath&&highestPath) drawMountainPolygon(mPoint,lowestPath,highestPath,angles);
-      if (mountainFrameCount%4===0) yield 1;
+      if (mountainFrameCount%7===0) yield 1;
     }
     yield 1;
   }
