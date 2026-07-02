@@ -591,7 +591,6 @@ new p5(function(p) {
       const canvas = document.getElementById('peaks-bg');
       if (canvas && canvas.tagName === 'CANVAS') {
         const dataUrl = canvas.toDataURL();
-        try { localStorage.setItem('peaks-snapshot', dataUrl); } catch(e) {}
         const img = document.createElement('img');
         img.src = dataUrl;
         img.id = 'peaks-bg';
