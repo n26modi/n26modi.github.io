@@ -588,16 +588,7 @@ new p5(function(p) {
       if (gen.next().done) isDone = true;
     }
     if (isDone) {
-      const canvas = document.getElementById('peaks-bg');
-      if (canvas && canvas.tagName === 'CANVAS') {
-        const dataUrl = canvas.toDataURL();
-        const img = document.createElement('img');
-        img.src = dataUrl;
-        img.id = 'peaks-bg';
-        img.style.cssText = canvas.style.cssText;
-        canvas.replaceWith(img);
-      }
-      p.remove();
+      p.noLoop();
     }
   };
 });
