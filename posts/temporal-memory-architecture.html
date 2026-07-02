@@ -218,6 +218,21 @@
 
 <canvas id="peaks-bg"></canvas>
 
+<script>
+(function() {
+  const snapshot = localStorage.getItem('peaks-snapshot');
+  if (snapshot) {
+    const canvas = document.getElementById('peaks-bg');
+    const img = document.createElement('img');
+    img.src = snapshot;
+    img.id = 'peaks-bg';
+    canvas.replaceWith(img);
+    // skip p5 rendering entirely
+    window.__peaksLoaded = true;
+  }
+})();
+</script>
+
 <button class="toggle" onclick="
   const t = document.documentElement;
   t.dataset.theme = t.dataset.theme === 'dark' ? 'light' : 'dark';
@@ -398,7 +413,7 @@
 </div>
 
 <script>
-new p5(function(p) {
+if (!window.__peaksLoaded) new p5(function(p) {
   let noiseScale = 0.01, gravity = 0.03;
   let initialPoints = [], currentPointIndex = 0, previousPointIndex = -1;
   let isDone = false, mountainFrameCount = 0, gen;
