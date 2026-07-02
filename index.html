@@ -587,6 +587,18 @@ new p5(function(p) {
     for (let i = 0; i < 1 && !isDone && gen; i++) {
       if (gen.next().done) isDone = true;
     }
+    if (isDone) {
+      // Snapshot canvas to img so iOS Safari doesn't drop it on scroll
+      const canvas = document.getElementById('peaks-bg');
+      if (canvas && canvas.tagName === 'CANVAS') {
+        const img = document.createElement('img');
+        img.src = canvas.toDataURL();
+        img.id = 'peaks-bg';
+        img.style.cssText = canvas.style.cssText;
+        canvas.replaceWith(img);
+      }
+      p.remove();
+    }
   };
 });
 </script>
