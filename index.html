@@ -613,7 +613,7 @@ new p5(function(p) {
 
   async function fetchArtwork({ artist, title, id, searchHint }) {
     if (id) {
-      const res  = await fetch(`https://itunes.apple.com/lookup?id=${id}&country=ca`);
+      const res  = await fetch(`https://itunes.apple.com/lookup?id=${id}&country=us`);
       const data = await res.json();
       if (data.results.length) return data.results[0].artworkUrl100;
     }
