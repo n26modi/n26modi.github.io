@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Temporal Memory Architecture in Multi-Agent Loops — Nishant Modi</title>
+  <style>
+    :root[data-theme="light"] {
+      --bg:        #f7f6f3;
+      --text:      #111111;
+      --secondary: #888888;
+      --border:    #e0ddd8;
+      --pill-bg:   #e8e5e0;
+      --pill-text: #333333;
+      --link:      #111111;
+      --code-bg:   #eceae6;
+    }
+    :root[data-theme="dark"] {
+      --bg:        #0f0f0f;
+      --text:      #e8e3da;
+      --secondary: #666666;
+      --border:    #222222;
+      --pill-bg:   #1e1e1e;
+      --pill-text: #c0bbb2;
+      --link:      #e8e3da;
+      --code-bg:   #1a1a1a;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body, h1, h2, h3, p, ol, ul { margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      -webkit-font-smoothing: antialiased;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: var(--pill-bg);
+      color: var(--secondary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-family: system-ui, -apple-system, sans-serif;
+      cursor: pointer;
+      transition: background 0.2s;
+      z-index: 2;
+    }
+    .toggle:hover { background: var(--border); }
+
+    .wrap {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 52px 24px 80px;
+    }
+
+    .back {
+      display: inline-block;
+      font-size: 13px;
+      color: var(--secondary);
+      text-decoration: none;
+      margin-bottom: 40px;
+    }
+    .back:hover { color: var(--text); }
+
+    .post-title {
+      font-size: 22px;
+      font-weight: 600;
+      line-height: 1.35;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+
+    .post-subtitle {
+      font-size: 15px;
+      color: var(--secondary);
+      margin-bottom: 10px;
+    }
+
+    .post-meta {
+      font-size: 13px;
+      color: var(--secondary);
+      margin-bottom: 40px;
+    }
+
+    .post-body p {
+      margin-bottom: 20px;
+    }
+
+    .post-body em {
+      color: var(--secondary);
+      font-style: italic;
+    }
+
+    .post-body h2 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-top: 44px;
+      margin-bottom: 14px;
+      letter-spacing: -0.01em;
+    }
+
+    .post-body h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--secondary);
+      margin-top: 28px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .post-body hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 36px 0;
+    }
+
+    .post-body a {
+      color: var(--link);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .post-body a:hover { opacity: 0.6; }
+
+    .post-body strong { font-weight: 600; }
+
+    .post-body ul, .post-body ol {
+      padding-left: 20px;
+      margin-bottom: 20px;
+    }
+    .post-body li { margin-bottom: 6px; }
+
+    .post-body code {
+      font-family: ui-monospace, 'SF Mono', monospace;
+      font-size: 13px;
+      background: var(--code-bg);
+      padding: 2px 5px;
+      border-radius: 3px;
+    }
+
+    .post-body pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 16px 18px;
+      overflow-x: auto;
+      margin-bottom: 20px;
+    }
+    .post-body pre code {
+      background: none;
+      padding: 0;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .post-body table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-bottom: 20px;
+      overflow-x: auto;
+      display: block;
+    }
+    .post-body th, .post-body td {
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      text-align: left;
+    }
+    .post-body th {
+      color: var(--secondary);
+      font-weight: 500;
+    }
+
+    .post-body img {
+      width: 100%;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      margin: 8px 0 20px;
+      display: block;
+    }
+
+    .img-caption {
+      font-size: 12px;
+      color: var(--secondary);
+      margin-top: -14px;
+      margin-bottom: 24px;
+    }
+  </style>
+</head>
+<body>
+
+<button class="toggle" onclick="
+  const t = document.documentElement;
+  t.dataset.theme = t.dataset.theme === 'dark' ? 'light' : 'dark';
+  this.textContent = t.dataset.theme === 'dark' ? '☀ light' : '● dark';
+">☀ light</button>
+
+<div class="wrap">
+  <a class="back" href="../index.html">← Nishant Modi</a>
+
+  <h1 class="post-title">Temporal Memory Architecture in Multi-Agent Loops</h1>
+  <p class="post-subtitle">Benchmarking RAG vs Temporal Graphs on Staleness</p>
+  <p class="post-meta">Jul 2026 &middot; <a href="https://github.com/n26modi/multi-agent-memory-eval" target="_blank" rel="noopener">github.com/n26modi/multi-agent-memory-eval</a></p>
+
+  <div class="post-body">
+
+    <p>As multi-agent loop engineering matures, memory architecture becomes the critical failure point for most teams.</p>
+
+    <p>Imagine a user's favourite movie changes. For example, Interstellar gets dethroned by Batman Begins. Both facts, the old favourite and the new, sit in the vector store. An agent queries for the current favourite and similarity retrieval returns Interstellar, the outdated one. The critic agent flags it and triggers a retry but gets back the same result. After another failed retry, the loop then escalates to a human.</p>
+
+    <p>That failure is caused by staleness in flat vector RAG. RAG works by embedding documents, storing them in a vector store, and retrieving by cosine similarity. This works for single-shot retrieval. Inside a loop, when two versions of the same fact coexist in memory, it breaks. The retrieval process has no concept of time and returns whatever scores highest on similarity, which is often the outdated fact.</p>
+
+    <p>I ran an A/B test of two memory architectures against the same 4-agent loop: ChromaDB (flat vector RAG) as the baseline, and Graphiti + Neo4j (temporal knowledge graph) as the treatment. Both back the exact same loop with the exact same 4 agents. Only the injected memory object differs.</p>
+
+    <hr />
+
+    <h2>The loop</h2>
+
+    <p>The system is a 4-agent research loop built in LangGraph. The loop takes a query, decomposes it into subtasks, retrieves facts from memory, validates them, and synthesizes a final report. If quality is below threshold, it retries. If it can't recover after two retries, it escalates to the human in the loop (me).</p>
+
+    <img src="https://raw.githubusercontent.com/n26modi/multi-agent-memory-eval/main/assets/agent_loop.png" alt="Multi-agent research loop diagram" />
+
+    <p><strong>Loop engineering</strong> here refers to the retry-escalate control structure. The critic scores findings on two dimensions: staleness (does a newer version of this fact exist?) and grounding (does the text support the claim?). If quality falls below 0.7, the loop sends the researcher agent back. If retries are exhausted, the loop escalates rather than hallucinate.</p>
+
+    <p>The agents are identical across both memory conditions. The planner breaks queries into 2-3 subtasks. The researcher queries memory and returns the top-1 hit per subtask. The critic checks each finding against <code>current_value(entity, relation)</code> for staleness, then runs an LLM grounding check. The synthesiser writes the final report from approved findings.</p>
+
+    <p>The <strong>memory interface</strong> is a single abstract class:</p>
+
+<pre><code>class Memory(ABC):
+    async def write(self, finding: Finding) -> None: ...
+    async def query(self, query_text: str, k: int = 5) -> list[Finding]: ...
+    async def current_value(self, entity: str, relation: str) -> Finding | None: ...</code></pre>
+
+    <p>Both implementations (ChromaDB and Graphiti + Neo4j) call the same Memory class, so the loop never knows which backend it's talking to. This makes it a controlled experiment.</p>
+
+    <hr />
+
+    <h2>The eval harness</h2>
+
+    <p>Measuring the quality of memory in a multi-agent loop requires more than just accuracy on a benchmark. On top of just checking if the answer is correct, I built an eval harness that also tracks <em>why</em> an answer is wrong - specifically, whether staleness caused the failure.</p>
+
+    <p><strong>The dataset: 30 queries across three types.</strong></p>
+
+    <p><strong>Static fact (n=10)</strong> - one correct fact per query without any temporal element. This is the control group to confirm the loop works before adding temporal complexity.</p>
+
+    <p><strong>Staleness-sensitive (n=15)</strong> - two versions of a fact seeded into memory before each query. V1 is the older value (wrong answer for the query), V2 is the newer value (correct answer). Examples: a company's CEO changed, a user's favourite movie changed, a framework changed its default optimizer. The query asks for the current value.</p>
+
+    <p><strong>Historical belief (n=5)</strong> - same two-version setup, but the query asks for the <em>past</em> state. The older fact is the correct answer. Included to test whether the memory backend can surface past facts, not just current ones.</p>
+
+    <p>The anti-cheat constraint governs all staleness items: V1 and V2 texts must be <strong>indistinguishable without timestamps</strong>. Recency words such as "former," "previously," "outdated," "no longer" are banned from corpus text. No explicit dates in the facts. Both V1 and V2 describe their fact as currently true. This ensures the temporal mechanism is what determines retrieval outcome, not surface cues.</p>
+
+    <p><strong>Scoring tracks four metrics per query:</strong></p>
+    <ul>
+      <li><code>correct</code> - ground truth appears in the final report</li>
+      <li><code>used_stale_fact</code> - stale V1 value appeared in the final report</li>
+      <li><code>critic_false_approve</code> - stale fact reached the report without being caught</li>
+      <li><code>staleness_caused_failure</code> - failure tagged with <code>staleness_failure</code> in the critic</li>
+    </ul>
+
+    <p>Each query gets a fresh memory instance and a unique partition ID, so facts from different queries never bleed into each other.</p>
+
+    <hr />
+
+    <h2>How each backend handles stale facts</h2>
+
+    <img src="https://raw.githubusercontent.com/n26modi/multi-agent-memory-eval/main/assets/temporal_invalidation.png" alt="Chroma vs Graphiti retrieval comparison" />
+
+    <p>In <strong>ChromaDB</strong>, both V1 (Jonathan Hale, CEO, Jun 2024) and V2 (Dr. Priya Nair, CEO, Dec 2025) sit in the vector store with no temporal metadata that affects retrieval. When the researcher queries "Who is the CEO of Meridian Bio?", cosine similarity decides. Because V1 and V2 are written in similar style and on the same topic (that's the anti-cheat guarantee), either could win. In practice, V1 consistently won the similarity contest in this eval.</p>
+
+    <p>In <strong>Graphiti</strong>, when V2 is written, a Cypher query marks V1 with <code>invalid_at = V2.valid_at</code>. V1 is now superseded at the graph layer. The researcher's <code>query()</code> method filters to <code>invalid_at IS NULL</code> before returning results, making V1 invisible. The researcher agent gets V2 on the first retrieval.</p>
+
+    <p>This change in the retrieval layer makes all the difference. The researcher agent doesn't need to be smarter, nor does the critic need a better staleness check. The memory layer just needs to stop returning stale facts.</p>
+
+    <hr />
+
+    <h2>Results</h2>
+
+    <img src="https://raw.githubusercontent.com/n26modi/multi-agent-memory-eval/main/assets/results_chart.png" alt="Eval results: ChromaDB vs Graphiti" />
+
+    <table>
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>ChromaDB</th>
+          <th>Graphiti</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Overall accuracy (30)</td><td>50%</td><td>77%</td></tr>
+        <tr><td>Staleness accuracy (15)</td><td>13%</td><td>80%</td></tr>
+        <tr><td>Staleness error rate (15)</td><td>87%</td><td>20%</td></tr>
+        <tr><td>Staleness-caused failures (15)</td><td>87%</td><td>0%</td></tr>
+        <tr><td>Critic false-approve rate (15)</td><td>0%</td><td>0%</td></tr>
+        <tr><td>Historical-belief retrieval accuracy (5)</td><td>60%</td><td>100%</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Staleness-sensitive queries:</strong> Chroma got 2 of 15 correct (13%). Graphiti got 12 of 15 (80%). The difference is 67 percentage points.</p>
+
+    <p><strong>Staleness-caused failures:</strong> Chroma produced a <code>staleness_failure</code> tag in 87% of staleness queries. Graphiti produced zero. Every Chroma failure traced to the same loop trap: detect staleness, retry, retrieve the same stale fact, retry again, escalate.</p>
+
+    <p><strong>Critic false-approve rate:</strong> 0% for both. The critic never let a stale fact through to the final report. This matters because it means the Chroma failures were not false negatives in the critic - they were inescapable loops. The critic was doing its job. The retriever wasn't.</p>
+
+    <p><strong>Graphiti's 3 staleness failures (20%):</strong> All three were <code>retrieval_misalignment</code> escalations where the critic's LLM grounding check scored valid findings below 0.5, triggering unnecessary retries until escalation. These are noise from the 8B model used for agent LLM calls, not staleness system failures. Graphiti had zero findings where V1 made it into the final report.</p>
+
+    <p><strong>Historical belief retrieval:</strong> Chroma 60%, Graphiti 100%. The 3 Graphiti failures that didn't reach the report correctly are small-model synthesis failures, not retrieval failures.</p>
+
+    <hr />
+
+    <h2>The failure trace</h2>
+
+    <img src="https://raw.githubusercontent.com/n26modi/multi-agent-memory-eval/main/assets/staleness_trace.png" alt="Staleness failure trace" />
+
+    <p>Chroma executes 8 steps to produce no answer. Graphiti executes 5 steps to produce the correct answer. The difference is entirely at the researcher's retrieval step.</p>
+
+    <p>The failure mode is expensive in production. Staleness doesn't just produce wrong answers - it produces escalations where the loop burns its full retry budget, incurs the latency of all those LLM calls, and returns nothing. Average latency for staleness-sensitive queries in Chroma was 11,937ms. In Graphiti, 9,243ms.</p>
+
+    <hr />
+
+    <h2>Point-in-time retrieval</h2>
+
+    <p>The historical-belief subset tests a different capability: can the memory backend surface a past fact when a newer version exists?</p>
+
+    <p>The queries ask about past state: "Who managed the Cascade Growth Fund when it had fewer than forty portfolio companies?" V1 is the correct answer (Thomas Aldrich, when the portfolio was smaller). V2 introduces a newer managing partner (Elena Vasquez, after the portfolio grew).</p>
+
+    <p>Graphiti supports point-in-time retrieval via date filters on <code>valid_at</code> and <code>invalid_at</code>. With <code>reference_time</code> set to V1's timestamp, the retriever filters to edges where <code>valid_at &lt;= T</code> and <code>invalid_at IS NULL OR invalid_at &gt; T</code>, surfacing V1 instead of V2. With both retrieval and critic updated for historical queries, Graphiti achieves 100% retrieval accuracy on all 5 historical belief queries.</p>
+
+    <p>ChromaDB has no equivalent mechanism - it retrieves V1 or V2 with roughly equal probability. 3 of 5 correct, essentially random.</p>
+
+    <p>The caveat is how <code>reference_time</code> gets sourced in production. In this eval, the harness supplies an oracle timestamp. In a real loop, the planner would need to parse temporal intent from natural language. That extraction step is outside the scope of this eval.</p>
+
+    <hr />
+
+    <h2>Failure taxonomy</h2>
+
+    <p><strong>Staleness-induced escalation</strong> (Chroma, 13/15 staleness queries) - researcher retrieves stale V1, critic flags it, retry retrieves V1 again, loop escalates. No stale fact reaches the report; the loop just produces nothing.</p>
+
+    <p><strong>Retrieval misalignment</strong> (Graphiti, 3/15 staleness queries + 3/5 historical-belief queries) - the critic's LLM grounding check gives a false negative on a valid finding, triggering unnecessary retries until escalation. Not a memory architecture failure - a small-model failure.</p>
+
+    <hr />
+
+    <h2>Caveats</h2>
+
+    <p><strong>Sample size.</strong> n=15 on the staleness subset is enough to observe a clear directional effect but not enough for strong statistical claims. The 67 percentage point gap is large, but these exact numbers are indicative rather than definitive.</p>
+
+    <p><strong>Agent LLM is 8B.</strong> The planner, critic grounding check, and synthesiser all use <code>llama-3.1-8b-instant</code> via Groq free tier. The retrieval misalignment failures and some static-fact misses are 8B inconsistency. A stronger model would reduce noise.</p>
+
+    <p><strong>Synthetic corpus.</strong> All facts use fabricated entities with clean entity-relation-value structure. The anti-cheat constraint keeps staleness hard to detect without temporal metadata. Real corpora are messier.</p>
+
+    <hr />
+
+    <h2>Architecture implications</h2>
+
+    <p>Flat vector RAG is the correct choice when facts in the domain are static or change infrequently, queries ask about a single point in time, and simplicity matters more than temporal precision.</p>
+
+    <p>Temporal graph memory earns its complexity when facts change and the system needs to track what changed and when, queries ask "what is current?" for entities that have multiple versions in memory, or queries ask about past state.</p>
+
+    <p>The last point is the one that gets missed. Temporal memory is often framed as a "knowledge base" improvement. It's actually a <strong>loop engineering</strong> improvement. Without it, a well-designed critic that correctly detects staleness makes the system <em>worse</em>. It burns retries on a problem the retriever can never solve.</p>
+
+    <hr />
+
+    <h2>Stack</h2>
+
+    <p>Python, LangGraph, ChromaDB, Graphiti, Neo4j (Docker), Groq API (free tier), sentence-transformers for local embeddings.</p>
+
+    <p>Code: <a href="https://github.com/n26modi/multi-agent-memory-eval" target="_blank" rel="noopener">github.com/n26modi/multi-agent-memory-eval</a></p>
+
+  </div>
+</div>
+
+</body>
+</html>
