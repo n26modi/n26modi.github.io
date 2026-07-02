@@ -606,12 +606,13 @@ new p5(function(p) {
 <script>
   const ALBUMS = [
     { artist: 'Pierre Bourne', title: 'The Life of Pierre 4' },
-    { artist: 'Lucki',         title: 'Watch My Back',  id: '1434128284' },
+    { artist: 'Lucki',         title: 'Watch My Back',  artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Music118/v4/b8/83/3b/b8833b2c-49b0-5cad-7c16-1f375583ba27/cover.jpg/600x600bb.jpg' },
     { artist: 'Drake',         title: 'More Life' },
-    { artist: 'Daniel Caesar', title: 'Freudian',        id: '1799080774' },
+    { artist: 'Daniel Caesar', title: 'Freudian',        artwork: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/b6/cd/1a/b6cd1a5b-83af-a1e2-0ad7-ea530fcf2522/859722261219.jpg/600x600bb.jpg' },
   ];
 
-  async function fetchArtwork({ artist, title, id, searchHint }) {
+  async function fetchArtwork({ artist, title, id, artwork, searchHint }) {
+    if (artwork) return artwork;
     if (id) {
       const res  = await fetch(`https://itunes.apple.com/lookup?id=${id}&country=us`);
       const data = await res.json();
