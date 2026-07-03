@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Temporal Memory Architecture in Multi-Agent Loops — Nishant Modi</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛰</text></svg>" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.3/p5.min.js"></script>
   <style>
     :root[data-theme="light"] {
@@ -247,8 +248,6 @@
 
     <p>The system is a 4-agent research loop built in LangGraph. The loop takes a query, decomposes it into subtasks, retrieves facts from memory, validates them, and synthesizes a final report. If quality is below threshold, it retries. If it can't recover after two retries, it escalates to the human in the loop (me).</p>
 
-    <img src="https://raw.githubusercontent.com/n26modi/multi-agent-memory-eval/main/assets/agent_loop.png" alt="Multi-agent research loop diagram" />
-
     <p><strong>Loop engineering</strong> here refers to the retry-escalate control structure. The critic scores findings on two dimensions: staleness (does a newer version of this fact exist?) and grounding (does the text support the claim?). If quality falls below 0.7, the loop sends the researcher agent back. If retries are exhausted, the loop escalates rather than hallucinate.</p>
 
     <p>The agents are identical across both memory conditions. The planner breaks queries into 2-3 subtasks. The researcher queries memory and returns the top-1 hit per subtask. The critic checks each finding against <code>current_value(entity, relation)</code> for staleness, then runs an LLM grounding check. The synthesiser writes the final report from approved findings.</p>
@@ -266,27 +265,19 @@
 
     <h2>The eval harness</h2>
 
-    <p>Measuring the quality of memory in a multi-agent loop requires more than just accuracy on a benchmark. On top of just checking if the answer is correct, I built an eval harness that also tracks <em>why</em> an answer is wrong - specifically, whether staleness caused the failure.</p>
+    <p>Measuring the quality of memory in a multi-agent loop requires more than just accuracy on a benchmark. On top of just checking if the answer is correct, I built an eval harness that also tracks <em>why</em> an answer is wrong. Specifically, whether or not staleness is what caused the failure.</p>
 
-    <p><strong>The dataset: 30 queries across three types.</strong></p>
+    <p>The dataset: 30 queries across three types.</p>
 
-    <p><strong>Static fact (n=10)</strong> - one correct fact per query without any temporal element. This is the control group to confirm the loop works before adding temporal complexity.</p>
-
-    <p><strong>Staleness-sensitive (n=15)</strong> - two versions of a fact seeded into memory before each query. V1 is the older value (wrong answer for the query), V2 is the newer value (correct answer). Examples: a company's CEO changed, a user's favourite movie changed, a framework changed its default optimizer. The query asks for the current value.</p>
-
-    <p><strong>Historical belief (n=5)</strong> - same two-version setup, but the query asks for the <em>past</em> state. The older fact is the correct answer. Included to test whether the memory backend can surface past facts, not just current ones.</p>
-
-    <p>The anti-cheat constraint governs all staleness items: V1 and V2 texts must be <strong>indistinguishable without timestamps</strong>. Recency words such as "former," "previously," "outdated," "no longer" are banned from corpus text. No explicit dates in the facts. Both V1 and V2 describe their fact as currently true. This ensures the temporal mechanism is what determines retrieval outcome, not surface cues.</p>
-
-    <p><strong>Scoring tracks four metrics per query:</strong></p>
     <ul>
-      <li><code>correct</code> - ground truth appears in the final report</li>
-      <li><code>used_stale_fact</code> - stale V1 value appeared in the final report</li>
-      <li><code>critic_false_approve</code> - stale fact reached the report without being caught</li>
-      <li><code>staleness_caused_failure</code> - failure tagged with <code>staleness_failure</code> in the critic</li>
+      <li><strong>Static fact (n=10)</strong> - one correct fact per query without any temporal element. This is the control group to confirm the loop works before adding temporal complexity.</li>
+      <li><strong>Staleness-sensitive (n=15)</strong> - two versions of a fact seeded into memory before each query. V1 is the older value (wrong answer for the query), V2 is the newer value (correct answer). Examples: a company's CEO changed, a user's favourite movie changed, a framework changed its default optimizer. The query asks for the current value.</li>
+      <li><strong>Historical belief (n=5)</strong> - same two-version setup, but the query asks for the past state. The older fact is the correct answer. I included this subset to test whether the memory backend can surface past facts, not just current ones.</li>
     </ul>
 
-    <p>Each query gets a fresh memory instance and a unique partition ID, so facts from different queries never bleed into each other.</p>
+    <p>The anti-cheat constraint governs all staleness items: V1 and V2 texts must be <strong>indistinguishable without timestamps</strong>. Recency words such as "former," "previously," "outdated," "no longer" are all banned from the dataset. No explicit dates in the facts. Both V1 and V2 describe their fact as currently true. A reader encountering only one version would believe it. This ensures the temporal mechanism is what determines retrieval outcome, not surface cues.</p>
+
+    <p>Scoring tracks whether the ground truth appears in the final report, whether a stale fact slipped through, and whether staleness caused the failure. Each query gets a fresh memory instance and a unique partition ID, so facts from different queries never bleed into each other.</p>
 
     <hr />
 
@@ -294,11 +285,13 @@
 
     <img src="https://raw.githubusercontent.com/n26modi/multi-agent-memory-eval/main/assets/temporal_invalidation.png" alt="Chroma vs Graphiti retrieval comparison" />
 
-    <p>In <strong>ChromaDB</strong>, both V1 (Jonathan Hale, CEO, Jun 2024) and V2 (Dr. Priya Nair, CEO, Dec 2025) sit in the vector store with no temporal metadata that affects retrieval. When the researcher queries "Who is the CEO of Meridian Bio?", cosine similarity decides. Because V1 and V2 are written in similar style and on the same topic (that's the anti-cheat guarantee), either could win. In practice, V1 consistently won the similarity contest in this eval.</p>
+    <p>The mechanism comes down to what each memory layer sees when two versions of a fact exist.</p>
+
+    <p>In <strong>ChromaDB</strong>, both V1 (Jonathan Hale, CEO, Jun 2024) and V2 (Dr. Priya Nair, CEO, Dec 2025) sit in the vector store with no temporal metadata that affects retrieval. Both have <code>invalid_at: None</code> because ChromaDB has no such field. When the researcher queries "Who is the CEO of Meridian Bio?", cosine similarity decides. Because V1 and V2 are written in similar style and on the same topic (that's the anti-cheat guarantee), either could win. In practice, V1 consistently won the similarity contest in this eval, landing the researcher on the stale fact.</p>
 
     <p>In <strong>Graphiti</strong>, when V2 is written, a Cypher query marks V1 with <code>invalid_at = V2.valid_at</code>. V1 is now superseded at the graph layer. The researcher's <code>query()</code> method filters to <code>invalid_at IS NULL</code> before returning results, making V1 invisible. The researcher agent gets V2 on the first retrieval.</p>
 
-    <p>This change in the retrieval layer makes all the difference. The researcher agent doesn't need to be smarter, nor does the critic need a better staleness check. The memory layer just needs to stop returning stale facts.</p>
+    <p>This change in the retrieval layer makes all the difference. The researcher agent doesn't actually need to be smarter, nor does the critic need a better staleness check. The memory layer just needs to stop returning stale facts.</p>
 
     <hr />
 
@@ -328,11 +321,9 @@
 
     <p><strong>Staleness-caused failures:</strong> Chroma produced a <code>staleness_failure</code> tag in 87% of staleness queries. Graphiti produced zero. Every Chroma failure traced to the same loop trap: detect staleness, retry, retrieve the same stale fact, retry again, escalate.</p>
 
-    <p><strong>Critic false-approve rate:</strong> 0% for both. The critic never let a stale fact through to the final report. This matters because it means the Chroma failures were not false negatives in the critic - they were inescapable loops. The critic was doing its job. The retriever wasn't.</p>
+    <p><strong>Graphiti's 3 staleness failures (20%):</strong> All three were grounding check false negatives from the 8B model, not staleness failures. Graphiti had zero cases where V1 made it into the final report.</p>
 
-    <p><strong>Graphiti's 3 staleness failures (20%):</strong> All three were <code>retrieval_misalignment</code> escalations where the critic's LLM grounding check scored valid findings below 0.5, triggering unnecessary retries until escalation. These are noise from the 8B model used for agent LLM calls, not staleness system failures. Graphiti had zero findings where V1 made it into the final report.</p>
-
-    <p><strong>Historical belief retrieval:</strong> Chroma 60%, Graphiti 100%. The 3 Graphiti failures that didn't reach the report correctly are small-model synthesis failures, not retrieval failures.</p>
+    <p><strong>Historical belief retrieval:</strong> Chroma 60%, Graphiti 100%. Graphiti's retrieval was correct on all 5 queries. 3 of 5 didn't reach the final report correctly, but those are failures caused by the 8B model (small) used for the synthesis agent, not retrieval or memory architecture failures. See point-in-time retrieval section below.</p>
 
     <hr />
 
@@ -340,9 +331,9 @@
 
     <img src="https://raw.githubusercontent.com/n26modi/multi-agent-memory-eval/main/assets/staleness_trace.png" alt="Staleness failure trace" />
 
-    <p>Chroma executes 8 steps to produce no answer. Graphiti executes 5 steps to produce the correct answer. The difference is entirely at the researcher's retrieval step.</p>
+    <p>Chroma executes 8 steps to produce no answer. Graphiti executes 5 steps to produce the correct answer. The difference is entirely at the researcher's retrieval step: which fact gets returned from memory. Everything else in the loop is identical.</p>
 
-    <p>The failure mode is expensive in production. Staleness doesn't just produce wrong answers - it produces escalations where the loop burns its full retry budget, incurs the latency of all those LLM calls, and returns nothing. Average latency for staleness-sensitive queries in Chroma was 11,937ms. In Graphiti, 9,243ms.</p>
+    <p>The failure mode is expensive in production. Staleness doesn't just produce wrong answers. It produces escalations where the loop burns its full retry budget, incurs the latency of all those LLM calls, and returns nothing. Average latency for staleness-sensitive queries in Chroma was 11,937ms. In Graphiti, 9,243ms, and most of that difference comes from the queries that escalated running three full researcher-critic cycles.</p>
 
     <hr />
 
@@ -350,39 +341,42 @@
 
     <p>The historical-belief subset tests a different capability: can the memory backend surface a past fact when a newer version exists?</p>
 
-    <p>The queries ask about past state: "Who managed the Cascade Growth Fund when it had fewer than forty portfolio companies?" V1 is the correct answer (Thomas Aldrich, when the portfolio was smaller). V2 introduces a newer managing partner (Elena Vasquez, after the portfolio grew).</p>
+    <p>The queries ask about past state: "Who managed the Cascade Growth Fund when it had fewer than forty portfolio companies?" V1 is the correct answer (Thomas Aldrich, when the portfolio was smaller). V2 introduces a newer managing partner (Elena Vasquez, after the portfolio grew). The ground truth is V1.</p>
 
-    <p>Graphiti supports point-in-time retrieval via date filters on <code>valid_at</code> and <code>invalid_at</code>. With <code>reference_time</code> set to V1's timestamp, the retriever filters to edges where <code>valid_at &lt;= T</code> and <code>invalid_at IS NULL OR invalid_at &gt; T</code>, surfacing V1 instead of V2. With both retrieval and critic updated for historical queries, Graphiti achieves 100% retrieval accuracy on all 5 historical belief queries.</p>
+    <p>Graphiti supports point-in-time retrieval via date filters on <code>valid_at</code> and <code>invalid_at</code>. With <code>reference_time</code> set to V1's timestamp, the retriever filters to edges where <code>valid_at &lt;= T</code> and <code>invalid_at IS NULL OR invalid_at &gt; T</code>, surfacing V1 instead of V2. The critic is also updated: for historical queries, the staleness check verifies the finding was valid at the reference time rather than comparing against the live value. With both changes, Graphiti achieves 100% retrieval accuracy on all 5 historical belief queries.</p>
 
-    <p>ChromaDB has no equivalent mechanism - it retrieves V1 or V2 with roughly equal probability. 3 of 5 correct, essentially random.</p>
+    <p>ChromaDB has no equivalent mechanism. It retrieves V1 or V2 with roughly equal probability (both have similar similarity scores). 3 of 5 correct, essentially random.</p>
 
-    <p>The caveat is how <code>reference_time</code> gets sourced in production. In this eval, the harness supplies an oracle timestamp. In a real loop, the planner would need to parse temporal intent from natural language. That extraction step is outside the scope of this eval.</p>
-
-    <hr />
-
-    <h2>Failure taxonomy</h2>
-
-    <p><strong>Staleness-induced escalation</strong> (Chroma, 13/15 staleness queries) - researcher retrieves stale V1, critic flags it, retry retrieves V1 again, loop escalates. No stale fact reaches the report; the loop just produces nothing.</p>
-
-    <p><strong>Retrieval misalignment</strong> (Graphiti, 3/15 staleness queries + 3/5 historical-belief queries) - the critic's LLM grounding check gives a false negative on a valid finding, triggering unnecessary retries until escalation. Not a memory architecture failure - a small-model failure.</p>
+    <p>The caveat is how <code>reference_time</code> gets sourced in production. In this eval, the harness supplies an oracle timestamp. In a real loop, the planner would need to parse temporal intent from natural language and convert it to a datetime before calling memory. That extraction step is non-trivial and outside the scope of this eval.</p>
 
     <hr />
 
     <h2>Caveats</h2>
 
-    <p><strong>Sample size.</strong> n=15 on the staleness subset is enough to observe a clear directional effect but not enough for strong statistical claims. The 67 percentage point gap is large, but these exact numbers are indicative rather than definitive.</p>
+    <p><strong>1) Sample size.</strong> n=15 on the staleness subset is enough to observe a clear directional effect but not enough for strong statistical claims. The 67 percentage point gap is large, but these exact numbers are indicative rather than definitive.</p>
 
-    <p><strong>Agent LLM is 8B.</strong> The planner, critic grounding check, and synthesiser all use <code>llama-3.1-8b-instant</code> via Groq free tier. The retrieval misalignment failures and some static-fact misses are 8B inconsistency. A stronger model would reduce noise.</p>
+    <p><strong>2) Agent LLM is 8B.</strong> The planner, critic grounding check, and synthesiser all use <code>llama-3.1-8b-instant</code> via Groq free tier. The retrieval misalignment failures and some static-fact misses are 8B inconsistency. A stronger model would reduce noise.</p>
 
-    <p><strong>Synthetic corpus.</strong> All facts use fabricated entities with clean entity-relation-value structure. The anti-cheat constraint keeps staleness hard to detect without temporal metadata. Real corpora are messier.</p>
+    <p><strong>3) Synthetic dataset.</strong> All facts use fabricated entities with clean entity-relation-value structure. The anti-cheat constraint keeps the staleness hard to detect without temporal metadata, which is the right property for this test. Real corpora are messier.</p>
 
     <hr />
 
     <h2>Architecture implications</h2>
 
-    <p>Flat vector RAG is the correct choice when facts in the domain are static or change infrequently, queries ask about a single point in time, and simplicity matters more than temporal precision.</p>
+    <p>Flat vector RAG is the correct choice when:</p>
+    <ul>
+      <li>Facts in the domain are static or change infrequently</li>
+      <li>Queries ask about a single point in time (usually "now")</li>
+      <li>Simplicity and operational cost matter more than temporal precision</li>
+    </ul>
 
-    <p>Temporal graph memory earns its complexity when facts change and the system needs to track what changed and when, queries ask "what is current?" for entities that have multiple versions in memory, or queries ask about past state.</p>
+    <p>Temporal graph memory earns its complexity when:</p>
+    <ul>
+      <li>Facts change and the system needs to track what changed and when</li>
+      <li>Queries ask "what is current?" for entities that have multiple versions in memory</li>
+      <li>Queries ask about past state and the loop can supply a temporal context</li>
+      <li>Loop-based architectures retry on failure (flat RAG creates inescapable retry loops for stale facts)</li>
+    </ul>
 
     <p>The last point is the one that gets missed. Temporal memory is often framed as a "knowledge base" improvement. It's actually a <strong>loop engineering</strong> improvement. Without it, a well-designed critic that correctly detects staleness makes the system <em>worse</em>. It burns retries on a problem the retriever can never solve.</p>
 
