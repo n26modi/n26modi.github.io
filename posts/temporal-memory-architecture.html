@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Temporal Memory Architecture in Multi-Agent Loops — Nishant Modi</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E⛰️%3C%2Ftext%3E%3C%2Fsvg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E⛰%3C%2Ftext%3E%3C%2Fsvg%3E">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.3/p5.min.js"></script>
   <style>
     :root[data-theme="light"] {
@@ -213,11 +213,61 @@
       margin-top: -14px;
       margin-bottom: 24px;
     }
+
+    .toc {
+      position: fixed;
+      top: 52px;
+      left: max(24px, calc(50% - 320px - 200px));
+      width: 160px;
+      z-index: 1;
+      display: none;
+    }
+    @media (min-width: 1100px) { .toc { display: block; } }
+
+    .toc-label {
+      font-size: 13px;
+      color: var(--secondary);
+      margin-bottom: 12px;
+    }
+
+    .toc-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .toc-list li { margin-bottom: 10px; }
+
+    .toc-list a {
+      font-size: 13px;
+      color: var(--secondary);
+      text-decoration: none;
+      line-height: 1.4;
+      display: block;
+      transition: color 0.15s;
+    }
+    .toc-list a:hover { color: var(--text); }
+    .toc-list a.active { color: var(--text); }
   </style>
 </head>
 <body>
 
 <canvas id="peaks-bg"></canvas>
+
+<nav class="toc">
+  <div class="toc-label">contents</div>
+  <ul class="toc-list">
+    <li><a href="#the-loop">the loop</a></li>
+    <li><a href="#the-eval-harness">the eval harness</a></li>
+    <li><a href="#how-each-backend">how each backend handles stale facts</a></li>
+    <li><a href="#results">results</a></li>
+    <li><a href="#the-failure-trace">the failure trace</a></li>
+    <li><a href="#point-in-time-retrieval">point-in-time retrieval</a></li>
+    <li><a href="#caveats">caveats</a></li>
+    <li><a href="#architecture-implications">architecture implications</a></li>
+    <li><a href="#stack">stack</a></li>
+  </ul>
+</nav>
 
 <button class="toggle" onclick="
   const t = document.documentElement;
@@ -244,7 +294,7 @@
 
     <hr />
 
-    <h2>The loop</h2>
+    <h2 id="the-loop">The loop</h2>
 
     <p>The system is a 4-agent research loop built in LangGraph. The loop takes a query, decomposes it into subtasks, retrieves facts from memory, validates them, and synthesizes a final report. If quality is below threshold, it retries. If it can't recover after two retries, it escalates to the human in the loop (me).</p>
 
@@ -263,7 +313,7 @@
 
     <hr />
 
-    <h2>The eval harness</h2>
+    <h2 id="the-eval-harness">The eval harness</h2>
 
     <p>Measuring the quality of memory in a multi-agent loop requires more than just accuracy on a benchmark. On top of just checking if the answer is correct, I built an eval harness that also tracks <em>why</em> an answer is wrong. Specifically, whether or not staleness is what caused the failure.</p>
 
@@ -281,7 +331,7 @@
 
     <hr />
 
-    <h2>How each backend handles stale facts</h2>
+    <h2 id="how-each-backend">How each backend handles stale facts</h2>
 
     <img src="https://raw.githubusercontent.com/n26modi/multi-agent-memory-eval/main/assets/temporal_invalidation.png" alt="Chroma vs Graphiti retrieval comparison" />
 
@@ -295,7 +345,7 @@
 
     <hr />
 
-    <h2>Results</h2>
+    <h2 id="results">Results</h2>
 
     <img src="https://raw.githubusercontent.com/n26modi/multi-agent-memory-eval/main/assets/results_chart.png" alt="Eval results: ChromaDB vs Graphiti" />
 
@@ -327,7 +377,7 @@
 
     <hr />
 
-    <h2>The failure trace</h2>
+    <h2 id="the-failure-trace">The failure trace</h2>
 
     <img src="https://raw.githubusercontent.com/n26modi/multi-agent-memory-eval/main/assets/staleness_trace.png" alt="Staleness failure trace" />
 
@@ -337,7 +387,7 @@
 
     <hr />
 
-    <h2>Point-in-time retrieval</h2>
+    <h2 id="point-in-time-retrieval">Point-in-time retrieval</h2>
 
     <p>The historical-belief subset tests a different capability: can the memory backend surface a past fact when a newer version exists?</p>
 
@@ -351,7 +401,7 @@
 
     <hr />
 
-    <h2>Caveats</h2>
+    <h2 id="caveats">Caveats</h2>
 
     <p><strong>1) Sample size.</strong> n=15 on the staleness subset is enough to observe a clear directional effect but not enough for strong statistical claims. The 67 percentage point gap is large, but these exact numbers are indicative rather than definitive.</p>
 
@@ -361,7 +411,7 @@
 
     <hr />
 
-    <h2>Architecture implications</h2>
+    <h2 id="architecture-implications">Architecture implications</h2>
 
     <p>Flat vector RAG is the correct choice when:</p>
     <ul>
@@ -382,7 +432,7 @@
 
     <hr />
 
-    <h2>Stack</h2>
+    <h2 id="stack">Stack</h2>
 
     <p>Python, LangGraph, ChromaDB, Graphiti, Neo4j (Docker), Groq API (free tier), sentence-transformers for local embeddings.</p>
 
@@ -390,6 +440,20 @@
 
   </div>
 </div>
+
+<script>
+(function() {
+  const links = document.querySelectorAll('.toc-list a');
+  const headings = Array.from(links).map(a => document.querySelector(a.getAttribute('href')));
+  function onScroll() {
+    let active = 0;
+    headings.forEach((h, i) => { if (h && h.getBoundingClientRect().top <= 120) active = i; });
+    links.forEach((a, i) => a.classList.toggle('active', i === active));
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+})();
+</script>
 
 <script>
 new p5(function(p) {
