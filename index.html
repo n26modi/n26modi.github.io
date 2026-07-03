@@ -154,9 +154,19 @@
       border-bottom: 1px solid var(--border);
     }
 
+    .post-title-row {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
     .writing-row .post-title {
       font-size: 15px;
       color: var(--text);
+    }
+    .post-date {
+      font-size: 12px;
+      color: var(--secondary);
+      white-space: nowrap;
     }
     .writing-row .post-meta {
       font-size: 12px;
@@ -279,9 +289,11 @@
   <p class="section-label">Writing</p>
   <ol class="writing-list">
     <li class="writing-row">
-      <a href="posts/temporal-memory-architecture.html" class="post-title">Temporal Memory Architecture in Multi-Agent Loops</a>
+      <div class="post-title-row">
+        <a href="posts/temporal-memory-architecture.html" class="post-title">Temporal Memory Architecture in Multi-Agent Loops</a>
+        <span class="post-date">Jul 2026</span>
+      </div>
       <div class="post-meta">As multi-agent loop engineering matures, memory architecture becomes the critical failure point for most teams.</div>
-      <div class="post-meta">Jul 2026</div>
     </li>
   </ol>
 
