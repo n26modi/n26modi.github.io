@@ -327,13 +327,13 @@
 
     <p>Measuring the quality of memory in a multi-agent loop takes more than just accuracy on a benchmark. On top of just checking if the answer is correct, I built an eval harness that also tracks <em>why</em> an answer is wrong. Specifically, to check whether or not staleness was what caused the failure.</p>
 
-    <p><strong>The dataset: 30 queries across three types.</strong></p>
+    <p>The dataset: 30 queries across three types.</p>
 
-    <p><strong>Static fact (n=10)</strong> - one correct fact per query without any temporal element. This is the control group to confirm the loop works before adding temporal complexity.</p>
-
-    <p><strong>Staleness-sensitive (n=15)</strong> - two versions of a fact seeded into memory before each query. V1 is the older value (wrong answer for the query), V2 is the newer value (correct answer). The query asks for the current value. Examples: a company's CEO changed, or a user's favourite movie changed.</p>
-
-    <p><strong>Historical belief (n=5)</strong> - same two-version setup, but the query asks for the <em>past</em> state. The older fact is the correct answer. I included this subset to test whether the memory backend can surface past facts, not just current ones.</p>
+    <ul>
+      <li><strong>Static fact (n=10)</strong> - one correct fact per query without any temporal element. This is the control group to confirm the loop works before adding temporal complexity.</li>
+      <li><strong>Staleness-sensitive (n=15)</strong> - two versions of a fact seeded into memory before each query. V1 is the older value (wrong answer for the query), V2 is the newer value (correct answer). The query asks for the current value. Examples: a company's CEO changed, or a user's favourite movie changed.</li>
+      <li><strong>Historical belief (n=5)</strong> - same two-version setup, but the query asks for the <em>past</em> state. The older fact is the correct answer. I included this subset to test whether the memory backend can surface past facts, not just current ones.</li>
+    </ul>
 
     <p>The anti-cheat constraint applies to all staleness items: V1 and V2 texts must be <strong>indistinguishable without timestamps</strong>. Recency words such as "former," "previously," "outdated," "no longer" are all banned from the dataset, and there are no explicit dates in the facts. Both V1 and V2 describe their fact as currently true. A reader encountering only one version would believe it. This ensures the temporal mechanism is what determines retrieval outcome, not surface cues.</p>
 
