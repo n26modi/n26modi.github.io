@@ -289,11 +289,16 @@
 
   <div class="post-body">
 
-    <p>Imagine your favourite movie changes. For example, Interstellar gets dethroned by Batman Begins. Both facts, the old favourite and the new, sit in the vector store. An agent queries for the current favourite and similarity retrieval returns Interstellar, the outdated one. In the loop, the critic agent flags it and triggers a retry but gets back the same result. After another failed retry, the loop then exits.</p>
+    <p>Imagine a company's CEO changes. Both names, the old CEO and the new one, are in your vector store. An agent queries for the current CEO and similarity retrieval returns the previous one. In a loop, a critic agent flags it and triggers a retry, but gets back the same stale fact. After two retries the loop escalates and returns nothing.</p>
 
     <p>That failure happens because of the RAG architecture, and the inherent staleness it comes with. RAG works by embedding documents, storing them in a vector store, and retrieving by cosine similarity. This works for single-shot retrieval. Inside a loop, when two versions of the same fact coexist in memory, it tends to break. The retrieval process has no concept of time and returns whatever scores highest on similarity, which is often the outdated fact.</p>
 
-    <p>I ran an A/B test of two memory architectures against the same 4-agent loop. Firstly, ChromaDB (flat vector RAG) as the baseline, and then Graphiti + Neo4j (temporal knowledge graph) as the treatment. They are both backends to the same loop with the same 4 agents, so only the memory object differs.</p>
+    <p>I ran an A/B test of two memory architectures against the same 4-agent loop.</p>
+    <ol>
+      <li>ChromaDB (flat vector RAG) as the baseline</li>
+      <li>Graphiti + Neo4j (temporal knowledge graph) as the treatment</li>
+    </ol>
+    <p>Both architectures are backends to the exact same loop, with only the memory object differing.</p>
 
     <hr />
 
@@ -305,7 +310,7 @@
 
     <p><strong>Loop engineering</strong> here refers to the retry-escalate structure. The critic agent scores findings on two dimensions: staleness (does a newer version of this fact exist?) and grounding (does the text support the claim?). If quality falls below 0.7 (threshold), the loop sends the researcher agent back. If retries are exhausted, the loop escalates rather than hallucinate.</p>
 
-    <p>The 4 agent loop works as follows.</p>
+    <p>The 0.7 threshold was set experimentally. Below it, findings consistently had unfounded claims. Above 0.7, the critic agent was reliable enough to approve.</p>
 
     <ol>
       <li>The planner breaks queries into 2-3 subtasks.</li>
@@ -321,15 +326,17 @@
     async def query(self, query_text: str, k: int = 5) -> list[Finding]: ...
     async def current_value(self, entity: str, relation: str) -> Finding | None: ...</code></pre>
 
-    <p>Both implementations (ChromaDB and Graphiti + Neo4j) call the same Memory class, so the loop never knows which backend it's talking to. This makes it a controlled experiment.</p>
+    <p><code>current_value</code> exists as a separate method because <code>query</code> is semantic. It returns whatever scores highest on similarity, which can include adjacent facts about the same entity. The critic needs a more precise structural lookup: for this exact entity and relation, what is the live value? <code>current_value</code> bypasses embedding entirely and looks up by key. Without it, you're basically using retrieval to check retrieval, which makes no sense.</p>
+
+    <p>Both implementations (ChromaDB and Graphiti + Neo4j) call this same Memory class, so the loop never knows which backend it's talking to.</p>
 
     <hr />
 
     <h2 id="the-eval-harness">The eval harness</h2>
 
-    <p>Measuring the quality of memory in a multi-agent loop takes more than just accuracy on a benchmark. On top of just checking if the answer is correct, I built an eval harness that also tracks <em>why</em> an answer is wrong. Specifically, to check whether or not staleness was what caused the failure.</p>
+    <p>I built an eval harness that tracks <em>why</em> an answer is wrong. Specifically, whether or not staleness is what caused the failure in the loop.</p>
 
-    <p>The dataset: 30 queries across three types.</p>
+    <p><strong>The dataset: 30 queries across three types.</strong></p>
 
     <ul>
       <li><strong>Static fact (n=10)</strong> - one correct fact per query without any temporal element. This is the control group to confirm the loop works before adding temporal complexity.</li>
@@ -341,19 +348,21 @@
 
     <p>Scoring tracks whether the ground truth appears in the final report, whether a stale fact slipped through, and whether staleness caused the failure. Each query gets a fresh memory instance and a unique partition ID, so facts from different queries never bleed into each other.</p>
 
+    <p>Note: embeddings for both architectures use a local sentence-transformers model rather than an external API. This keeps the experiment self-contained - no embedding API latency or cost variability bleeding into the results, and also ensures the same embedding model runs across both backends.</p>
+
     <hr />
 
     <h2 id="how-each-backend">How each backend handles stale facts</h2>
 
-    <p>The mechanism comes down to what each memory layer sees when two versions of a fact exist.</p>
+    <p>The backends differ at one point: what each memory layer returns when two versions of a fact exist.</p>
 
     <img src="https://raw.githubusercontent.com/n26modi/multi-agent-memory-eval/main/assets/temporal_invalidation.png" alt="Chroma vs Graphiti retrieval comparison" />
 
-    <p>In <strong>ChromaDB</strong>, both V1 (Jonathan Hale, CEO, Jun 2024) and V2 (Dr. Priya Nair, CEO, Dec 2025) sit in the vector store with no temporal metadata that affects retrieval. Both have <code>invalid_at: None</code> because ChromaDB has no such field. When the researcher queries "Who is the CEO of Meridian Bio?", cosine similarity decides. Because V1 and V2 are written in similar style and on the same topic (that's the anti-cheat guarantee), either could win. In practice, V1 consistently won the similarity contest in this eval, landing the researcher on the stale fact.</p>
+    <p>In <strong>ChromaDB</strong>, both V1 (Jonathan Hale, CEO, Jun 2024) and V2 (Dr. Priya Nair, CEO, Dec 2025) sit in the vector store with no temporal metadata that affects retrieval. ChromaDB has no temporal metadata field. There is no <code>invalid_at</code> concept in a flat vector store - documents just sit in the index with no notion of when they were valid. When the researcher queries "Who is the CEO of Meridian Bio?", cosine similarity decides. Because V1 and V2 are written in similar style and on the same topic (that's the anti-cheat guarantee), either could win. In practice, V1 consistently won the similarity contest in this eval, landing the researcher on the stale fact.</p>
 
     <p>In <strong>Graphiti</strong>, when V2 is written, a Cypher query marks V1 with <code>invalid_at = V2.valid_at</code>. V1 is now superseded at the graph layer. The researcher's <code>query()</code> method filters to <code>invalid_at IS NULL</code> before returning results, making V1 invisible. The researcher agent gets V2 on the first retrieval.</p>
 
-    <p>This change in the retrieval layer makes all the difference. The researcher agent doesn't actually need to be smarter, nor does the critic need a better staleness check. The memory layer just needs to stop returning stale facts.</p>
+    <p>The researcher agent doesn't need to be smarter, nor does the critic need a better staleness check. No agent code changes are required - fixing the memory layer is enough.</p>
 
     <hr />
 
@@ -376,7 +385,7 @@
 
     <p><strong>Staleness-caused failures:</strong> Chroma produced a <code>staleness_failure</code> tag in 87% of staleness queries. Graphiti produced zero. Every Chroma failure traced to the same loop trap: detect staleness, retry, retrieve the same stale fact, retry again, escalate.</p>
 
-    <p><strong>Graphiti's 3 staleness failures (20%):</strong> All three were grounding check false negatives from the 8B model, not staleness failures. Graphiti had zero cases where V1 made it into the final report.</p>
+    <p><strong>Graphiti's 3 staleness failures (20%):</strong> All three were grounding check false negatives from the 8B model, not staleness failures. In all three cases the retriever returned V2 correctly, which I verified by inspecting the researcher's raw output in the eval log. However, the synthesiser either misquoted it or failed the grounding check due to model inconsistency. Graphiti had zero cases where V1 made it into the final report.</p>
 
     <p><strong>Historical belief retrieval:</strong> Chroma 60%, Graphiti 100%. Graphiti's retrieval was correct on all 5 queries. 3 of 5 didn't reach the final report correctly, but those are failures caused by the 8B model (small) used for the synthesis agent, not retrieval or memory architecture failures. See point-in-time retrieval section below.</p>
 
@@ -384,19 +393,21 @@
 
     <h2 id="the-failure-trace">The failure trace</h2>
 
-    <p>The failure trace for a staleness-sensitive query under Chroma vs Graphiti roots directly to the mechanism.</p>
+    <p>The failure trace for a staleness-sensitive query traces directly to the retrieval mechanism.</p>
 
     <img src="https://raw.githubusercontent.com/n26modi/multi-agent-memory-eval/main/assets/staleness_trace.png" alt="Staleness failure trace" />
 
     <p>Chroma executes 8 steps to produce no answer. Graphiti executes 5 steps to produce the correct answer. The difference is entirely at the researcher's retrieval step: which fact gets returned from memory. Everything else in the loop is identical.</p>
 
-    <p>The failure mode is expensive in production. Staleness doesn't just produce wrong answers. It produces escalations where the loop burns its full retry budget, incurs the latency of all those LLM calls, and returns nothing. Average latency for staleness-sensitive queries in Chroma was 11,937ms. In Graphiti, 9,243ms, and most of that difference comes from the queries that escalated running three full researcher-critic cycles.</p>
+    <p>Staleness produces escalations where the loop burns its full retry budget, incurs the latency of all those LLM calls, and returns nothing. The latency gap between ChromaDB (11,937ms) and Graphiti (9,243ms) on staleness queries is more about retry cost than architecture speed. Escalated ChromaDB queries ran three full researcher-critic cycles before returning nothing.</p>
+
+    <p>Note: both latency numbers are bottlenecked by Groq free tier queue time, not architecture speed. The absolute numbers aren't production-representative. But the relative gap between them is. It reflects how many LLM calls each path burned before exiting, which is expensive in production.</p>
 
     <hr />
 
     <h2 id="point-in-time-retrieval">Point-in-time retrieval</h2>
 
-    <p>The historical-belief subset tests a different capability: can the memory backend surface a past fact when a newer version exists? The queries ask about past state, where V1 is the correct answer, even though V2 introduces a newer answer. Here's an example query:</p>
+    <p>The historical-belief subset tests a different capability: can the memory backend surface a past fact when a newer version exists? The queries ask about past state, where V1 is the correct answer, even though V2 introduces a newer answer. For example, take this query:</p>
 
     <ul>
       <li>"Who managed the Cascade Growth Fund when it had fewer than forty portfolio companies?"</li>
@@ -406,19 +417,19 @@
 
     <p>Graphiti supports point-in-time retrieval via date filters on <code>valid_at</code> and <code>invalid_at</code>. With <code>reference_time</code> set to V1's timestamp, the retriever surfaces V1 instead of V2. The critic is also updated: for historical queries, the staleness check verifies the finding was valid at the reference time rather than comparing against the live value. With both changes, Graphiti achieves 100% retrieval accuracy on all 5 historical belief queries.</p>
 
-    <p>ChromaDB has no equivalent mechanism. It retrieves V1 or V2 with roughly equal probability (both have similar similarity scores). 3 of 5 correct, essentially random.</p>
-
-    <p>There is one catch to consider. In this eval, the harness supplies an oracle timestamp for <code>reference_time</code>. In production, the planner would need to parse temporal intent from natural language and convert it to a datetime before calling memory. That extraction step is non-trivial and outside the scope of this eval.</p>
+    <p>ChromaDB has no equivalent mechanism. In this eval, it retrieved V1 more often than V2, but not because of any retrieval mechanism. Since both V1 and V2 were written in the same style and topic, their cosine similarity scores were similar. Therefore, ChromaDB got 3 of 5 correct, which is essentially random.</p>
 
     <hr />
 
     <h2 id="caveats">Caveats</h2>
 
-    <p>1) <strong>Sample size.</strong> n=15 on the staleness subset is enough to observe a clear directional effect but not enough for strong statistical claims. The 67 percentage point gap is large, but these exact numbers are indicative rather than definitive.</p>
+    <p>1. <strong>Sample size.</strong> n=15 on the staleness subset is enough to observe a clear directional effect but not enough for strong statistical claims. The 67 percentage point gap is large, but these exact numbers are indicative rather than definitive.</p>
 
-    <p>2) <strong>Agent LLM is 8B.</strong> The planner, critic grounding check, and synthesiser all use <code>llama-3.1-8b-instant</code> via Groq free tier. The retrieval misalignment failures and some static-fact misses are 8B inconsistency. A stronger model would reduce noise.</p>
+    <p>2. <strong>Agent LLM is 8B.</strong> The planner, critic grounding check, and synthesiser all use <code>llama-3.1-8b-instant</code> via Groq free tier. The retrieval misalignment failures and some static-fact misses are 8B inconsistency. A stronger model would reduce noise.</p>
 
-    <p>3) <strong>Synthetic dataset.</strong> All facts use fabricated entities with clean entity-relation-value structure. The anti-cheat constraint keeps the staleness hard to detect without temporal metadata, which is the right property for this test. Real data tends to be messier.</p>
+    <p>3. <strong>Synthetic dataset.</strong> All facts use fabricated entities with clean entity-relation-value structure. The anti-cheat constraint keeps the staleness hard to detect without temporal metadata, which is the right property for this test. Real data tends to be messier.</p>
+
+    <p>4. <strong>Oracle timestamps.</strong> Point-in-time retrieval in this eval relies on the harness supplying an exact <code>reference_time</code> to the memory backend. In production, the planner agent would need to parse temporal intent from natural language and convert it to a datetime before calling memory. That extraction step is non-trivial and unsolved here. The 100% historical-belief accuracy is real, but it assumes temporal intent is already resolved upstream.</p>
 
     <hr />
 
