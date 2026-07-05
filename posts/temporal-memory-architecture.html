@@ -296,7 +296,7 @@
     <p>I ran an A/B test of two memory architectures against the same 4-agent loop.</p>
     <ol>
       <li>ChromaDB (flat vector RAG) as the baseline</li>
-      <li>Graphiti + Neo4j (temporal knowledge graph) as the treatment</li>
+      <li>Graphiti + Neo4j (temporal knowledge graph) as the treatment.</li>
     </ol>
     <p>Both architectures are backends to the exact same loop, with only the memory object differing.</p>
 
@@ -310,7 +310,7 @@
 
     <p><strong>Loop engineering</strong> here refers to the retry-escalate structure. The critic agent scores findings on two dimensions: staleness (does a newer version of this fact exist?) and grounding (does the text support the claim?). If quality falls below 0.7 (threshold), the loop sends the researcher agent back. If retries are exhausted, the loop escalates rather than hallucinate.</p>
 
-    <p>The 0.7 threshold was set experimentally. Below it, findings consistently had unfounded claims. Above 0.7, the critic agent was reliable enough to approve.</p>
+    <p>The 0.7 threshold was set experimentally. Below it, findings consistently had unfounded claims. Above 0.7, the critic agent was reliable enough to approve. The structure of the loop is outlined below.</p>
 
     <ol>
       <li>The planner breaks queries into 2-3 subtasks.</li>
@@ -326,7 +326,7 @@
     async def query(self, query_text: str, k: int = 5) -> list[Finding]: ...
     async def current_value(self, entity: str, relation: str) -> Finding | None: ...</code></pre>
 
-    <p><code>current_value</code> exists as a separate method because <code>query</code> is semantic. It returns whatever scores highest on similarity, which can include adjacent facts about the same entity. The critic needs a more precise structural lookup: for this exact entity and relation, what is the live value? <code>current_value</code> bypasses embedding entirely and looks up by key. Without it, you're basically using retrieval to check retrieval, which makes no sense.</p>
+    <p><code>current_value</code> exists as a separate method because query is semantic. It returns whatever scores highest on similarity, which can include adjacent facts about the same entity. The critic needs a more precise structural lookup: for this exact entity and relation, what is the live value? <code>current_value</code> bypasses embedding entirely and looks up by key. Without it, you're basically using retrieval to check retrieval, which makes no sense.</p>
 
     <p>Both implementations (ChromaDB and Graphiti + Neo4j) call this same Memory class, so the loop never knows which backend it's talking to.</p>
 
@@ -334,7 +334,7 @@
 
     <h2 id="the-eval-harness">The eval harness</h2>
 
-    <p>I built an eval harness that tracks <em>why</em> an answer is wrong. Specifically, whether or not staleness is what caused the failure in the loop.</p>
+    <p>I built an eval harness that tracks why an answer is wrong. Specifically, whether or not staleness is what caused the failure in the loop.</p>
 
     <p><strong>The dataset: 30 queries across three types.</strong></p>
 
@@ -348,7 +348,7 @@
 
     <p>Scoring tracks whether the ground truth appears in the final report, whether a stale fact slipped through, and whether staleness caused the failure. Each query gets a fresh memory instance and a unique partition ID, so facts from different queries never bleed into each other.</p>
 
-    <p>Note: embeddings for both architectures use a local sentence-transformers model rather than an external API. This keeps the experiment self-contained; no embedding API latency or cost variability bleeding into the results, and also ensures the same embedding model runs across both backends.</p>
+    <p>Note: Embeddings for both architectures use a local sentence-transformers model rather than an external API. This keeps the experiment self-contained; no embedding API latency or cost variability bleeding into the results, and also ensures the same embedding model runs across both backends.</p>
 
     <hr />
 
@@ -358,11 +358,11 @@
 
     <img src="https://raw.githubusercontent.com/n26modi/multi-agent-memory-eval/main/assets/temporal_invalidation.png" alt="Chroma vs Graphiti retrieval comparison" />
 
-    <p>In <strong>ChromaDB</strong>, both V1 (Jonathan Hale, CEO, Jun 2024) and V2 (Dr. Priya Nair, CEO, Dec 2025) sit in the vector store with no temporal metadata that affects retrieval. ChromaDB has no temporal metadata field. There is no <code>invalid_at</code> concept in a flat vector store - documents just sit in the index with no notion of when they were valid. When the researcher queries "Who is the CEO of Meridian Bio?", cosine similarity decides. Because V1 and V2 are written in similar style and on the same topic (that's the anti-cheat guarantee), either could win. In practice, V1 consistently won the similarity contest in this eval, landing the researcher on the stale fact.</p>
+    <p>In <strong>ChromaDB</strong>, both V1 (Jonathan Hale, CEO, Jun 2024) and V2 (Dr. Priya Nair, CEO, Dec 2025) sit in the vector store with no temporal metadata that affects retrieval. ChromaDB has no temporal metadata field. There is no <code>invalid_at</code> concept in a flat vector store, documents just sit in the index with no notion of when they were valid. When the researcher queries "Who is the CEO of Meridian Bio?", cosine similarity decides. Because V1 and V2 are written in similar style and on the same topic (that's the anti-cheat guarantee), either could win. In practice, V1 consistently won the similarity contest in this eval, landing the researcher on the stale fact.</p>
 
     <p>In <strong>Graphiti</strong>, when V2 is written, a Cypher query marks V1 with <code>invalid_at = V2.valid_at</code>. V1 is now superseded at the graph layer. The researcher's <code>query()</code> method filters to <code>invalid_at IS NULL</code> before returning results, making V1 invisible. The researcher agent gets V2 on the first retrieval.</p>
 
-    <p>The researcher agent doesn't need to be smarter, nor does the critic need a better staleness check. No agent code changes are required - fixing the memory layer is enough.</p>
+    <p>The researcher agent doesn't need to be smarter, nor does the critic need a better staleness check. No agent code changes are required; fixing the memory layer is enough.</p>
 
     <hr />
 
@@ -378,7 +378,7 @@
 | Staleness error rate (15)        | 87%                | 20%                |
 | Staleness-caused failures (15)   | 87%                | 0%                 |
 | Critic false-approve rate (15)   | 0%                 | 0%                 |
-| Historical-belief retrieval (5)  | 60%                | 100%               |
+| Historical-belief retrieval accuracy (5) | 60%           | 100%               |
 +----------------------------------+--------------------+--------------------+</code></pre>
 
     <p><strong>Staleness-sensitive queries:</strong> Chroma got 2 of 15 correct (13%). Graphiti got 12 of 15 (80%). That's a 67% difference.</p>
@@ -429,7 +429,7 @@
 
     <p>3. <strong>Synthetic dataset.</strong> All facts use fabricated entities with clean entity-relation-value structure. The anti-cheat constraint keeps the staleness hard to detect without temporal metadata, which is the right property for this test. Real data tends to be messier.</p>
 
-    <p>4. <strong>Oracle timestamps.</strong> Point-in-time retrieval in this eval relies on the harness supplying an exact <code>reference_time</code> to the memory backend. In production, the planner agent would need to parse temporal intent from natural language and convert it to a datetime before calling memory. That extraction step is non-trivial and unsolved here. The 100% historical-belief accuracy is real, but it assumes temporal intent is already resolved upstream.</p>
+    <p>4. <strong>Oracle Timestamps.</strong> Point-in-time retrieval in this eval relies on the harness supplying an exact <code>reference_time</code> to the memory backend. In production, the planner agent would need to parse temporal intent from natural language and convert it to a datetime before calling memory. That extraction step is non-trivial and unsolved here. The 100% historical-belief accuracy is real, but it assumes temporal intent is already resolved upstream.</p>
 
     <hr />
 
