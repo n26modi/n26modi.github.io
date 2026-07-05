@@ -348,7 +348,7 @@
 
     <p>Scoring tracks whether the ground truth appears in the final report, whether a stale fact slipped through, and whether staleness caused the failure. Each query gets a fresh memory instance and a unique partition ID, so facts from different queries never bleed into each other.</p>
 
-    <p>Note: embeddings for both architectures use a local sentence-transformers model rather than an external API. This keeps the experiment self-contained - no embedding API latency or cost variability bleeding into the results, and also ensures the same embedding model runs across both backends.</p>
+    <p>Note: embeddings for both architectures use a local sentence-transformers model rather than an external API. This keeps the experiment self-contained; no embedding API latency or cost variability bleeding into the results, and also ensures the same embedding model runs across both backends.</p>
 
     <hr />
 
