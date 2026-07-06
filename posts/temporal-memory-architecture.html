@@ -261,6 +261,7 @@
   <div class="toc-label">contents</div>
   <ul class="toc-list">
     <li><a href="#key-finding">key finding</a></li>
+    <li><a href="#why-loops-get-stuck">why loops get stuck</a></li>
     <li><a href="#the-loop">the loop</a></li>
     <li><a href="#the-eval-harness">the eval harness</a></li>
     <li><a href="#how-each-backend">how each backend handles stale facts</a></li>
@@ -299,6 +300,8 @@
     <p>Swapping in a temporal knowledge graph (Graphiti + Neo4j), with zero changes to the agents themselves, cut staleness error from 87% to 20% and took point-in-time retrieval accuracy from 60% to 100%.</p>
 
     <hr />
+
+    <h2 id="why-loops-get-stuck">Why loops get stuck</h2>
 
     <p>Imagine a company's CEO changes. Both names, the old CEO and the new one, are in your vector store. An agent queries for the current CEO and similarity retrieval returns the previous one. In a loop, a critic agent flags it and triggers a retry, but gets back the same stale fact. After two retries the loop escalates and returns nothing.</p>
 
