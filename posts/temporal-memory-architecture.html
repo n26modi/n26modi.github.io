@@ -260,6 +260,7 @@
 <nav class="toc">
   <div class="toc-label">contents</div>
   <ul class="toc-list">
+    <li><a href="#key-finding">key finding</a></li>
     <li><a href="#the-loop">the loop</a></li>
     <li><a href="#the-eval-harness">the eval harness</a></li>
     <li><a href="#how-each-backend">how each backend handles stale facts</a></li>
@@ -288,6 +289,16 @@
   <hr style="border: none; border-top: 1px solid var(--border); margin: 24px 0 36px;" />
 
   <div class="post-body">
+
+    <h2 id="key-finding">Key finding</h2>
+
+    <p>Agent loops running on RAG backends not only return wrong answers, but they also get stuck.</p>
+
+    <p>This is because RAG has no concept of time. Similarity search returns whichever version of a fact scores highest, old or not, so retrying might just return the same stale answer again.</p>
+
+    <p>Swapping in a temporal knowledge graph (Graphiti + Neo4j), with zero changes to the agents themselves, cut staleness error from 87% to 20% and took point-in-time retrieval accuracy from 60% to 100%.</p>
+
+    <hr />
 
     <p>Imagine a company's CEO changes. Both names, the old CEO and the new one, are in your vector store. An agent queries for the current CEO and similarity retrieval returns the previous one. In a loop, a critic agent flags it and triggers a retry, but gets back the same stale fact. After two retries the loop escalates and returns nothing.</p>
 
