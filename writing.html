@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Writing - Nishant Modi</title>
+  <script>
+    (function(){var c=document.createElement('canvas');c.width=180;c.height=180;var x=c.getContext('2d');x.font='150px serif';x.fillText('⛰️',15,148);var u=c.toDataURL();['icon','apple-touch-icon'].forEach(function(r){var l=document.createElement('link');l.rel=r;l.href=u;document.head.appendChild(l);});})();
+  </script>
+  <style>
+    :root[data-theme="light"] {
+      --bg:        #f7f6f3;
+      --text:      #111111;
+      --secondary: #888888;
+      --border:    #e0ddd8;
+      --pill-bg:   #e8e5e0;
+      --pill-text: #333333;
+      --link:      #111111;
+    }
+    :root[data-theme="dark"] {
+      --bg:        #0f0f0f;
+      --text:      #e8e3da;
+      --secondary: #666666;
+      --border:    #222222;
+      --pill-bg:   #1e1e1e;
+      --pill-text: #c0bbb2;
+      --link:      #e8e3da;
+    }
+
+    #peaks-bg {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.12;
+    }
+    :root[data-theme="dark"] #peaks-bg { opacity: 0.22; }
+
+    .wrap { position: relative; z-index: 1; }
+    .toggle { z-index: 2; }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body, h1, h2, p, ol, ul { margin: 0; padding: 0; }
+    ol, ul { list-style: none; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .wrap {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 52px 24px 52px;
+    }
+
+    .toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: var(--pill-bg);
+      color: var(--secondary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-family: system-ui, -apple-system, sans-serif;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .toggle:hover { background: var(--border); }
+
+    .breadcrumb {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      margin-bottom: 28px;
+    }
+    .breadcrumb a {
+      color: var(--text);
+      text-decoration: none;
+    }
+    .breadcrumb a:hover { opacity: 0.6; }
+    .breadcrumb-sep {
+      color: var(--secondary);
+      font-weight: 400;
+      margin: 0 4px;
+    }
+    .breadcrumb-current {
+      color: var(--secondary);
+      font-weight: 400;
+    }
+
+    a {
+      color: var(--link);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    a:hover { opacity: 0.6; }
+
+    .writing-list { border-top: 1px solid var(--border); }
+
+    .writing-row {
+      padding: 11px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .post-title-row {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+    .writing-row .post-title {
+      font-size: 15px;
+      color: var(--text);
+    }
+    .post-date {
+      font-size: 12px;
+      color: var(--secondary);
+      white-space: nowrap;
+    }
+    .writing-row .post-meta {
+      font-size: 12px;
+      color: var(--secondary);
+      margin-top: 3px;
+    }
+  </style>
+</head>
+<body>
+
+<img id="peaks-bg" src="assets/peaks-bg.png" alt="">
+
+<button class="toggle" onclick="
+  const t = document.documentElement;
+  t.dataset.theme = t.dataset.theme === 'dark' ? 'light' : 'dark';
+  this.textContent = t.dataset.theme === 'dark' ? '☀ light' : '● dark';
+">● dark</button>
+
+<div class="wrap">
+
+  <p class="breadcrumb">
+    <a href="index.html">Nishant Modi</a><span class="breadcrumb-sep">/</span><span class="breadcrumb-current">writing</span>
+  </p>
+
+  <ol class="writing-list">
+    <li class="writing-row">
+      <div class="post-title-row">
+        <a href="posts/close-your-loops.html" class="post-title">Close your loops</a>
+        <span class="post-date">Aug 2026</span>
+      </div>
+      <div class="post-meta">Here's how I reduce burnout and stay present.</div>
+    </li>
+  </ol>
+
+</div>
+
+</body>
+</html>

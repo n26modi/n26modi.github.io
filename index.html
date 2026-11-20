@@ -84,7 +84,7 @@
       font-size: 15px;
       font-weight: 600;
       letter-spacing: -0.01em;
-      margin-bottom: 20px;
+      margin-bottom: 0;
     }
 
     /* bio */
@@ -252,6 +252,28 @@
     }
 
     .shelf-sq:hover::after { opacity: 1; }
+
+    .name-row {
+      display: flex;
+      align-items: baseline;
+      gap: 110px;
+      margin-bottom: 20px;
+    }
+    .top-nav {
+      display: flex;
+      gap: 18px;
+    }
+    .top-nav a {
+      font-size: 13px;
+      color: var(--secondary);
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .top-nav a:hover, .top-nav a.active {
+      color: var(--text);
+      opacity: 1;
+    }
+
   </style>
 </head>
 <body>
@@ -266,12 +288,18 @@
 
 <div class="wrap">
 
-  <p class="name">Nishant Modi</p>
+  <div class="name-row">
+    <p class="name">Nishant Modi</p>
+    <nav class="top-nav">
+      <a href="research.html">research</a>
+      <a href="writing.html">writing</a>
+    </nav>
+  </div>
 
   <div class="bio">
     <p>
-      Management Engineering student at the University of Waterloo and currently Applied AI Engineer at <a href="https://generalmagic.inc" class="pill" target="_blank" rel="noopener">General Magic (a16z)</a>.
-      Previously, I spent time as a Data Science Intern at <a href="https://www.rbc.com" class="pill" target="_blank" rel="noopener">RBC</a> where I built tools for fraud detection,
+      Management Engineering at UWaterloo, currently Applied AI Engineer at <a href="https://generalmagic.inc" class="pill" target="_blank" rel="noopener">General Magic (a16z)</a> and Research Engineer at <a href="https://www.linkedin.com/company/wat-ai/posts/?feedView=all" class="pill" target="_blank" rel="noopener">WAT.ai</a>.
+      Previously Data Science Intern at <a href="https://www.rbc.com" class="pill" target="_blank" rel="noopener">RBC</a> where I built MCP tools for fraud detection,
       and as an Applied Research Engineer at <a href="https://aquashieldai.com" class="pill" target="_blank" rel="noopener">AquaShield AI (YC P26)</a>, where I worked on ML evals and synthetic data for water leak detection.
     </p>
     <p>
@@ -282,35 +310,6 @@
       or <a href="mailto:n26modi@uwaterloo.ca">email</a>.
     </p>
   </div>
-
-  <p class="section-label">Writing</p>
-  <ol class="writing-list">
-    <li class="writing-row">
-      <div class="post-title-row">
-        <a href="posts/sparse-attention-triton-bench.html" class="post-title">Content-Adaptive Sparse Attention Kernel for Long-Context Inference</a>
-        <span class="post-date">Aug 2026</span>
-      </div>
-      <div class="post-meta">A novel Triton kernel that picks which tokens to attend to at runtime, computing 3.9% of dense attention's FLOPs at 32k context.</div>
-    </li>
-    <li class="writing-row">
-      <div class="post-title-row">
-        <a href="posts/temporal-memory-architecture.html" class="post-title">Temporal Memory Architecture in Multi-Agent Loops</a>
-        <span class="post-date">Jul 2026</span>
-      </div>
-      <div class="post-meta">As multi-agent loop engineering matures, memory architecture becomes the critical failure point for most teams.</div>
-    </li>
-  </ol>
-
-  <p class="section-label">Thoughts</p>
-  <ol class="writing-list">
-    <li class="writing-row">
-      <div class="post-title-row">
-        <a href="posts/close-your-loops.html" class="post-title">Close your loops</a>
-        <span class="post-date">Aug 2026</span>
-      </div>
-      <div class="post-meta">Here's how I reduce burnout and stay present.</div>
-    </li>
-  </ol>
 
   <p class="section-label">Me</p>
   <div class="interests">
